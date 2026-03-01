@@ -43,13 +43,14 @@ def normalize_and_validate(text):
 
 
 def find_and_validate_credit_cards(text):
-    cards = r'\b\d{16}\b'
+    cards = r'\b(?:\d{4}[\s]?){3}\d{4}\b'
     match = (re.findall(cards, text))
     valid = []
     invalid = []
     
     for card in match:
-        potential_card = [int(digit) for digit in card]
+        cleaned_card = re.sub(r'[\s-]', '', card)
+        potential_card = [int(digit) for digit in cleaned_card]
         odd_position = potential_card[::2]
         even_position = potential_card[1::2]
         check_list = []
@@ -77,6 +78,7 @@ def find_and_validate_credit_cards(text):
 
 print(find_and_validate_credit_cards(text))
 print(find_system_info(lines))
+
 
 
 
