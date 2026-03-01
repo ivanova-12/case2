@@ -12,6 +12,7 @@ def find_system_info(text):
     potential_ips = []
     potential_emails = []
     potential_files = []
+    
     for line in text:
         potential_ips.extend((re.findall(r'\b[0-2]?[0-9]?[0-9]\.[0-2]?[0-9]?[0-9]\.[0-2]?[0-9]?[0-9]\.[0-2]?[0-9]?[0-9]\b', line)))
         potential_emails.extend(re.findall(r'\b[A-Za-z0-9._%+-]{1,64}@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b', line))
@@ -39,7 +40,44 @@ def normalize_and_validate(text):
     'inn': {'valid': [], 'invalid': []},
     'cards': {'valid': [], 'invalid': []} }
     """
+
+
+def find_and_validate_credit_cards(text):
+    cards = r'\b\d{16}\b'
+    match = (re.findall(cards, text))
+    valid = []
+    invalid = []
+    
+    for card in match:
+        potential_card = [int(digit) for digit in card]
+        odd_position = potential_card[::2]
+        even_position = potential_card[1::2]
+        check_list = []
+        for digit in odd_position:
+            digit = digit * 2
+            check_list.append(digit)
+        check_list_new = []
+        for digit in check_list:
+            if digit > 9:
+                digit -= 9
+            check_list_new.append(digit)
+            sequence = even_position + check_list_new
+        count = 0
+
+        for digit in sequence:
+            count += int(digit)
+        if count % 10 == 0:
+            valid.append(str(card))
+        else:
+            invalid.append(str(card))
+    invalidated = " ".join(list(set(invalid)))
+    validated = " ".join(list(set(valid)))
+    return f"valid: {validated} invalid: {invalidated}"
+
+
+print(find_and_validate_credit_cards(text))
 print(find_system_info(lines))
+
 
 
 
