@@ -76,8 +76,99 @@ def find_and_validate_credit_cards(text):
     return f"valid: {validated} invalid: {invalidated}"
 
 
+def decode_messages(text):
+    """
+    finds and decodes messages
+    returns: {'base64': [], 'hex': [], 'rot13': []}
+    """
+    result = {
+        'base64': [],
+        'hex': [],
+        'rot13': []
+        }
+    base64_candidates = re.findall(r'[A-Za-z0-9+/=]{4,}', text)
+
+    for candidate in base64_candidates:
+        if candidate.isdigit():
+            continue
+        if candidate.isalpha():
+            continue
+        has_upper = any(c.isupper() for c in candidate)
+        has_lower = any(c.islower() for c in candidate)
+        has_digit = any(c.isdigit() for c in candidate)
+        has_special = any(c in '+/=' for c in candidate)
+        types_count = sum([has_upper, has_lower, has_digit, has_special])
+        if ((len(candidate) % 4 == 0 or '=' in candidate)
+            and types_count >= 2):
+            try:
+                decoded_bytes = base64.b64decode(candidate)
+                decoded_str = decoded_bytes.decode('utf-8')
+                if (decoded_str.isprintable() and len(decoded_str) > 0
+                    and (' ' in decoded_str)):
+                    result['base64'].append(decoded_str)
+            except:
+                pass
+
+    hex_prefix = re.findall(r'0x([A-Fa-f0-9]+)', text)
+    hex_escaped = re.findall(r'(?:\\x([A-Fa-f0-9]{2}))+', text)
+    hex_candidates = re.findall(r'\b([A-Fa-f0-9]{4,})\b', text)
+    all_hex = hex_prefix + hex_escaped + hex_candidates
+
+    for hex_str in all_hex:
+        if len(hex_str) % 2 == 0:
+            try:
+                decoded_bytes = bytes.fromhex(hex_str)
+                decoded_str = decoded_bytes.decode('utf-8')
+                if decoded_str.isprintable() and len(decoded_str) > 0 and (' ' in decoded_str):
+                    result['hex'].append(decoded_str)
+            except:
+                pass
+                
+    rot13_candidates = re.findall(r'[A-Za-z]{4,}', text)
+
+    for candidate in rot13_candidates:
+        kwords = { 'the', 'be', 'to', 'of', 'and', 'a', 'in',
+                   'that', 'have', 'this', 'is', 'are', 'was',
+                   'were', 'for', 'with', 'from', 'hello', 'world',
+                   'password', 'admin', 'user', 'login', 'secret',
+                   'key', 'api', 'token', 'summer', 'winter', 'spring',
+                   'autumn', '2024', '2023', '2025', 'true', 'false',
+                   'null', 'none', 'yes', 'no', 'error', 'warning', 'info',
+                   'debug', 'trace', 'log', 'file', 'data', 'text', 'string'
+                   }
+        if candidate.lower() in kwords:
+            continue
+        if candidate[0].isdigit() or candidate[-1].isdigit():
+            continue
+        if candidate[0].isdigit() or candidate[-1].isdigit():
+            continue
+        try:
+            decoded = codecs.decode(candidate, 'rot_13')
+            if decoded == candidate or not decoded.isprintable():
+                continue
+            vowels = 'aeiouyAEIOUY'
+            if not any(c in vowels for c in decoded):
+                continue
+            if decoded.lower() in kwords:
+                result['rot13'].append(decoded)
+                continue
+        except:
+            pass
+
+    for key in result:
+        unique = []
+        for item in result[key]:
+            if item not in unique:
+                unique.append(item)
+        result[key] = unique
+
+    return result
+
+
+print(decode_messages(main_text))
 print(find_and_validate_credit_cards(text))
 print(find_system_info(lines))
+
 
 
 
