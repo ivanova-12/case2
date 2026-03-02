@@ -43,37 +43,40 @@ def normalize_and_validate(text):
 
 
 def find_and_validate_credit_cards(text):
-    cards = r'\b(?:\d{4}[\s]?){3}\d{4}\b'
-    match = (re.findall(cards, text))
+    """
+    find credit cards numbers and check
+    return: {'valid': [], 'invalid': []}
+    """
+    result = {'valid': [], 'invalid': []}
     valid = []
     invalid = []
-    
-    for card in match:
-        cleaned_card = re.sub(r'[\s-]', '', card)
-        potential_card = [int(digit) for digit in cleaned_card]
-        odd_position = potential_card[::2]
-        even_position = potential_card[1::2]
-        check_list = []
-        for digit in odd_position:
-            digit = digit * 2
-            check_list.append(digit)
-        check_list_new = []
-        for digit in check_list:
-            if digit > 9:
-                digit -= 9
-            check_list_new.append(digit)
-            sequence = even_position + check_list_new
-        count = 0
+    for line in text:
+        cards = r'\b(?:\d{4}[\s-]*?){3}\d{4}\b'
+        match = (re.findall(cards, line))
+        for card in match:
+            clean_card = re.sub(r'[\s-]', '', card)
+            potential_card = [int(digit) for digit in clean_card]
+            odd_position = potential_card[::2]
+            even_position = potential_card[1::2]
+            check_list = []
+            for digit in odd_position:
+                digit = digit * 2
+                check_list.append(digit)
+            check_list_new = []
+            for digit in check_list:
+                if digit > 9:
+                    digit -= 9
+                check_list_new.append(digit)
+                sequence = even_position + check_list_new
+            count = 0
 
-        for digit in sequence:
-            count += int(digit)
-        if count % 10 == 0:
-            valid.append(str(card))
-        else:
-            invalid.append(str(card))
-    invalidated = " ".join(list(set(invalid)))
-    validated = " ".join(list(set(valid)))
-    return f"valid: {validated} invalid: {invalidated}"
+            for digit in sequence:
+                count += int(digit)
+            if count % 10 == 0:
+                valid.append(str(card))
+            else:
+                invalid.append(str(card))
+    return f"valid: {set(valid} invalid: {set(invalid)}"
 
 
 def decode_messages(text):
@@ -168,6 +171,7 @@ def decode_messages(text):
 print(decode_messages(main_text))
 print(find_and_validate_credit_cards(text))
 print(find_system_info(lines))
+
 
 
 
