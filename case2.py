@@ -1,9 +1,6 @@
 import re
-
-with open('input.txt', 'r', encoding='utf-8') as f:
-    lines = f.readlines()
-
-
+import codecs
+import base64
 def find_system_info(text):
     """
     find sistem information
@@ -12,34 +9,37 @@ def find_system_info(text):
     potential_ips = []
     potential_emails = []
     potential_files = []
-    
-    for line in text:
-        potential_ips.extend((re.findall(r'\b[0-2]?[0-9]?[0-9]\.[0-2]?[0-9]?[0-9]\.[0-2]?[0-9]?[0-9]\.[0-2]?[0-9]?[0-9]\b', line)))
+    result = {
+        'ips': [],
+        'files': [],
+        'emails': []
+    }
+    if isinstance(text, list):
+        lines = text
+    else:
+        lines = [text]
+    for line in lines:
+        potential_ips.extend(
+            (re.findall(r'\b[0-2]?[0-9]?[0-9]\.[0-2]?[0-9]?[0-9]\.[0-2]?[0-9]?[0-9]\.[0-2]?[0-9]?[0-9]\b', line)))
         potential_emails.extend(re.findall(r'\b[A-Za-z0-9._%+-]{1,64}@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b', line))
-        potential_files.extend(re.findall(r'\b[A-Z]:\\(?:[a-zA-Zа-яА-Я0-9_-]+\\)*[a-zA-Zа-яА-Я0-9_-]{1,255}\.[a-zA-Z0-9]{1,}\b', line))
+        potential_files.extend(
+            re.findall(r'\b[A-Z]:\\(?:[a-zA-Zа-яА-Я0-9_-]+\\)*[a-zA-Zа-яА-Я0-9_-]{1,255}\.[a-zA-Z0-9]{1,}\b', line))
     ips = []
     for ip in potential_ips:
-            if all(0 <= int(num) <= 255 and len(str(int(num))) == len(num) for num in ip.split('.')):
-                    ips.append(ip)
+        if all(0 <= int(num) <= 255 and len(str(int(num))) == len(num) for num in ip.split('.')):
+            ips.append(ip)
+    result['ips'] = list(set(ips))
     emails = []
     for email in potential_emails:
         if len(email) <= 254:
             emails.append(email)
+    result['emails'] = list(set(emails))
     files = []
     for file in potential_files:
         if len(file) <= 255:
             files.append(file)
-    return set(ips), set(emails), set(files)
-
-
-def normalize_and_validate(text):
-    """
-    format date to standard and chek it up
-    return: { 'phones': {'valid': [], 'invalid': []},
-    'dates': {'normalized': [], 'invalid': []},
-    'inn': {'valid': [], 'invalid': []},
-    'cards': {'valid': [], 'invalid': []} }
-    """
+    result['files'] = list(set(files))
+    return result
 
 
 def find_and_validate_credit_cards(text):
@@ -47,10 +47,14 @@ def find_and_validate_credit_cards(text):
     find credit cards numbers and check
     return: {'valid': [], 'invalid': []}
     """
+    if isinstance(text, list):
+        lines = text
+    else:
+        lines = [text]
     result = {'valid': [], 'invalid': []}
     valid = []
     invalid = []
-    for line in text:
+    for line in lines:
         cards = r'\b(?:\d{4}[\s-]*?){3}\d{4}\b'
         match = (re.findall(cards, line))
         for card in match:
@@ -76,7 +80,7 @@ def find_and_validate_credit_cards(text):
                 valid.append(str(card))
             else:
                 invalid.append(str(card))
-    return f"valid: {set(valid} invalid: {set(invalid)}"
+    return f"valid: {set(valid)}, invalid: {set(invalid)}"
 
 
 def decode_messages(text):
@@ -88,9 +92,12 @@ def decode_messages(text):
         'base64': [],
         'hex': [],
         'rot13': []
-        }
-    base64_candidates = re.findall(r'[A-Za-z0-9+/=]{4,}', text)
-
+    }
+    if isinstance(text, list):
+        text_str = ' '.join(text)
+    else:
+        text_str = text
+    base64_candidates = re.findall(r'[A-Za-z0-9+/=]{4,}', text_str)
     for candidate in base64_candidates:
         if candidate.isdigit():
             continue
@@ -102,19 +109,19 @@ def decode_messages(text):
         has_special = any(c in '+/=' for c in candidate)
         types_count = sum([has_upper, has_lower, has_digit, has_special])
         if ((len(candidate) % 4 == 0 or '=' in candidate)
-            and types_count >= 2):
+                and types_count >= 2):
             try:
                 decoded_bytes = base64.b64decode(candidate)
                 decoded_str = decoded_bytes.decode('utf-8')
                 if (decoded_str.isprintable() and len(decoded_str) > 0
-                    and (' ' in decoded_str)):
+                        and (' ' in decoded_str)):
                     result['base64'].append(decoded_str)
             except:
                 pass
 
-    hex_prefix = re.findall(r'0x([A-Fa-f0-9]+)', text)
-    hex_escaped = re.findall(r'(?:\\x([A-Fa-f0-9]{2}))+', text)
-    hex_candidates = re.findall(r'\b([A-Fa-f0-9]{4,})\b', text)
+    hex_prefix = re.findall(r'0x([A-Fa-f0-9]+)', text_str)
+    hex_escaped = re.findall(r'(?:\\x([A-Fa-f0-9]{2}))+', text_str)
+    hex_candidates = re.findall(r'\b([A-Fa-f0-9]{4,})\b', text_str)
     all_hex = hex_prefix + hex_escaped + hex_candidates
 
     for hex_str in all_hex:
@@ -126,19 +133,19 @@ def decode_messages(text):
                     result['hex'].append(decoded_str)
             except:
                 pass
-                
-    rot13_candidates = re.findall(r'[A-Za-z]{4,}', text)
+
+    rot13_candidates = re.findall(r'[A-Za-z]{4,}', text_str)
 
     for candidate in rot13_candidates:
-        kwords = { 'the', 'be', 'to', 'of', 'and', 'a', 'in',
-                   'that', 'have', 'this', 'is', 'are', 'was',
-                   'were', 'for', 'with', 'from', 'hello', 'world',
-                   'password', 'admin', 'user', 'login', 'secret',
-                   'key', 'api', 'token', 'summer', 'winter', 'spring',
-                   'autumn', '2024', '2023', '2025', 'true', 'false',
-                   'null', 'none', 'yes', 'no', 'error', 'warning', 'info',
-                   'debug', 'trace', 'log', 'file', 'data', 'text', 'string'
-                   }
+        kwords = {'the', 'be', 'to', 'of', 'and', 'a', 'in',
+                  'that', 'have', 'this', 'is', 'are', 'was',
+                  'were', 'for', 'with', 'from', 'hello', 'world',
+                  'password', 'admin', 'user', 'login', 'secret',
+                  'key', 'api', 'token', 'summer', 'winter', 'spring',
+                  'autumn', '2024', '2023', '2025', 'true', 'false',
+                  'null', 'none', 'yes', 'no', 'error', 'warning', 'info',
+                  'debug', 'trace', 'log', 'file', 'data', 'text', 'string'
+                  }
         if candidate.lower() in kwords:
             continue
         if candidate[0].isdigit() or candidate[-1].isdigit():
@@ -168,9 +175,39 @@ def decode_messages(text):
     return result
 
 
-print(decode_messages(main_text))
-print(find_and_validate_credit_cards(text))
-print(find_system_info(lines))
+def generate_comprehensive_report(main_text):
+    """
+    Generate whole report about investigation
+    """
+    report = { 'financial_data': find_and_validate_credit_cards(main_text),
+               'system_info': find_system_info(main_text),
+               'encoded_messages': decode_messages(main_text),
+               }
+    return report
+
+
+def print_report(report):
+    """
+    outputs a report in a specific standard
+    """
+    print("=" * 50)
+    print("ОТЧЕТ ОПЕРАЦИИ 'DATA SHIELD'")
+    print("=" * 50)
+    # Вывод результатов каждой роли
+    sections = [ ("ФИНАНСОВЫЕ ДАННЫЕ", report['financial_data']),
+                 ("СИСТЕМНАЯ ИНФОРМАЦИЯ", report['system_info']),
+                 ("РАСШИФРОВАННЫЕ СООБЩЕНИЯ", report['encoded_messages']),
+               ]
+    for title, data in sections:
+        print(f"\n{title}: {data}")
+        print("-" * 30)
+
+
+if __name__ == '__main__':
+    with open('input.txt', 'r', encoding='utf-8') as f:
+        main_text = f.read()
+        report = generate_comprehensive_report(main_text)
+        print_report(report)
 
 
 
