@@ -118,7 +118,7 @@ def decode_messages(text):
                     result['base64'].append(decoded_str)
             except:
                 pass
-        hex_prefix = re.findall(r'0x([A-Fa-f0-9]+)', text)
+    hex_prefix = re.findall(r'0x([A-Fa-f0-9]+)', text)
     hex_escaped = re.findall(r'(?:\\x([A-Fa-f0-9]{2}))+', text)
     hex_candidates = re.findall(r'\b([A-Fa-f0-9]{4,})\b', text)
     all_hex = hex_prefix + hex_escaped + hex_candidates
@@ -214,6 +214,7 @@ if __name__ == '__main__':
         main_text = f.read()
         report = generate_comprehensive_report(main_text)
         print_report(report)
+
 
 
 
