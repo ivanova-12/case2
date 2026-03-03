@@ -80,7 +80,9 @@ def find_and_validate_credit_cards(text):
                 valid.append(str(card))
             else:
                 invalid.append(str(card))
-    return f"valid: {set(valid)}, invalid: {set(invalid)}"
+            result['valid'] = set(list(valid))
+            result['invalid'] = set(list(invalid))
+    return result
 
 
 def decode_messages(text):
@@ -128,8 +130,8 @@ def decode_messages(text):
                 decoded_bytes = bytes.fromhex(hex_str)
                 decoded_str = decoded_bytes.decode('utf-8')
                 if ((decoded_str.isprintable()) and (len(decoded_str) > 0)
-                    and (' ' in decoded_str)):
-                    
+                        and (' ' in decoded_str)):
+
                     for i in decoded_str.split():
                         if i.isalpha():
                             result['hex'].append(decoded_str)
@@ -154,7 +156,7 @@ def decode_messages(text):
 
     for candidate in rot13_candidates:
         words_in_cand = candidate.split(' ')
-        if (len(words_in_cand) >1) and (candidate.isprintable()):
+        if (len(words_in_cand) > 1) and (candidate.isprintable()):
             res_candidates.append(candidate)
 
             for w in words_in_cand:
@@ -196,24 +198,107 @@ def print_report(report):
     """
     outputs a report in a specific standard
     """
-    print("=" * 50)
-    print("ОТЧЕТ ОПЕРАЦИИ 'DATA SHIELD'")
-    print("=" * 50)
-    # Вывод результатов каждой роли
-    sections = [ ("ФИНАНСОВЫЕ ДАННЫЕ", report['financial_data']),
-                 ("СИСТЕМНАЯ ИНФОРМАЦИЯ", report['system_info']),
-                 ("РАСШИФРОВАННЫЕ СООБЩЕНИЯ", report['encoded_messages']),
-               ]
-    for title, data in sections:
-        print(f"\n{title}: {data}")
-        print("-" * 30)
+    output_lines = []
+
+    output_lines.append("=" * 50)
+    output_lines.append("ОТЧЕТ ОПЕРАЦИИ 'DATA SHIELD'")
+    output_lines.append("=" * 50)
+    output_lines.append("\nФИНАНСОВЫЕ ДАННЫЕ:")
+    output_lines.append("-" * 30)
+    output_lines.append("ВАЛИДНЫЕ КАРТЫ:")
+    for card in report['financial_data']['valid']:
+        output_lines.append(f"{card}")
+    output_lines.append("НЕВАЛИДНЫЕ КАРТЫ:")
+    for card in report['financial_data']['invalid']:
+        output_lines.append(f"{card}")
+
+    output_lines.append("\nСИСТЕМНАЯ ИНФОРМАЦИЯ:")
+    output_lines.append("-" * 30)
+    output_lines.append("IP-АДРЕСА:")
+    for ip in report['system_info']['ips']:
+        output_lines.append(f"{ip}")
+    output_lines.append("EMAIL-АДРЕСА:")
+    for email in report['system_info']['emails']:
+        output_lines.append(f"{email}")
+    output_lines.append("ФАЙЛЫ:")
+    for file in report['system_info']['files']:
+        output_lines.append(f"{file}")
+
+    output_lines.append("\nРАСШИФРОВАННЫЕ СООБЩЕНИЯ:")
+    output_lines.append("-" * 30)
+    output_lines.append("BASE64:")
+    for msg in report['encoded_messages']['base64']:
+        output_lines.append(f"{msg}")
+    output_lines.append("HEX:")
+    for msg in report['encoded_messages']['hex']:
+        output_lines.append(f"{msg}")
+    output_lines.append("ROT13:")
+    for msg in report['encoded_messages']['rot13']:
+        output_lines.append(f"{msg}")
+
+    for line in output_lines:
+        print(line)
+
+    return output_lines
+
+
+def save_report_to_file(report_lines, filename='result2.txt'):
+    """
+    Saves report to a file
+    """
+    with open(filename, 'w', encoding='utf-8') as f:
+        for line in report_lines:
+            f.write(line + '\n')
 
 
 if __name__ == '__main__':
     with open('input.txt', 'r', encoding='utf-8') as f:
         main_text = f.read()
         report = generate_comprehensive_report(main_text)
-        print_report(report)
+        report_lines = print_report(report)
+        save_report_to_file(report_lines, 'result2.txt')
+    with (open('optimizate_results.txt', 'w+', encoding='utf-8') as fi):
+        with open('result2.txt', 'r', encoding='utf-8') as f:
+            our_txt = f.readlines()
+            for line in our_txt:
+                if (line == '' or any(ord('А') <= ord(alpha) <= ord('Я') for alpha in list(line))
+                        or line.rstrip() == 'HEX:' or line.rstrip() == 'ROT13:' or line.rstrip() == 'BASE64:'
+                        or (len(set(line.strip())) == 1 and str(set(line.strip())) == '-')
+                        or (len(set(line.strip())) == 1 and str(set(line.strip())) == '=')):
+                    our_txt.remove(line)
+            our_txt = set(our_txt)
+        for i in range(1, 15):
+            if i != 2:
+                fl = 'result' + str(i) + '.txt'
+                with open(fl, 'r', encoding='utf-8') as fe:
+                    txt = fe.readlines()
+                    for line in txt:
+                        if (line == '' or any( ord('А') <= ord(alpha) <= ord('Я') for alpha in list(line))
+                            or line.rstrip() == 'HEX:' or line.rstrip() == 'ROT13:' or line.rstrip() == 'BASE64:'
+                            or (len(set(line.strip())) == 1 and str(set(line.strip())) == '-')
+                            or (len(set(line.strip())) == 1 and str(set(line.strip())) == '=')):
+                            txt.remove(line)
+                    txt = set(txt)
+                    s = ''
+                    if len(txt & our_txt) > 0:
+                        fi.write(s + '\n')
+                        fi.write(f'НАША КОМАНДА И КОМАНДА {i} ИМЕЮТ ОДИНАКОВЫЕ ДАННЫЕ:' + '\n')
+                        fi.write(s + '\n')
+                        for elem in (txt & our_txt):
+                            fi.write(elem)
+                    if len(our_txt - txt) > 0:
+                        fi.write(s + '\n')
+                        fi.write(f'КОМАНДА {i} НЕ НАШЛА:'  + '\n')
+                        fi.write(s + '\n')
+                        for elem in (our_txt - txt):
+                            fi.write(elem)
+                    if  len(txt - our_txt) > 0:
+                        fi.write(s + '\n')
+                        fi.write(f'НАША КОМАНДА НЕ НАШЛА:'  + '\n')
+                        fi.write(s + '\n')
+                        for elem in (txt - our_txt):
+                            fi.write(elem)
+
 
 
 
