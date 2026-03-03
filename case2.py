@@ -118,52 +118,58 @@ def decode_messages(text):
                     result['base64'].append(decoded_str)
             except:
                 pass
-
-    hex_prefix = re.findall(r'0x([A-Fa-f0-9]+)', text_str)
-    hex_escaped = re.findall(r'(?:\\x([A-Fa-f0-9]{2}))+', text_str)
-    hex_candidates = re.findall(r'\b([A-Fa-f0-9]{4,})\b', text_str)
+        hex_prefix = re.findall(r'0x([A-Fa-f0-9]+)', text)
+    hex_escaped = re.findall(r'(?:\\x([A-Fa-f0-9]{2}))+', text)
+    hex_candidates = re.findall(r'\b([A-Fa-f0-9]{4,})\b', text)
     all_hex = hex_prefix + hex_escaped + hex_candidates
-
     for hex_str in all_hex:
         if len(hex_str) % 2 == 0:
             try:
                 decoded_bytes = bytes.fromhex(hex_str)
                 decoded_str = decoded_bytes.decode('utf-8')
-                if decoded_str.isprintable() and len(decoded_str) > 0 and (' ' in decoded_str):
-                    result['hex'].append(decoded_str)
+                if ((decoded_str.isprintable()) and (len(decoded_str) > 0)
+                    and (' ' in decoded_str)):
+                    
+                    for i in decoded_str.split():
+                        if i.isalpha():
+                            result['hex'].append(decoded_str)
             except:
                 pass
 
-    rot13_candidates = re.findall(r'[A-Za-z]{4,}', text_str)
+    rot13_words = r'\b[A-Za-z]+\s[A-Za-z]+(?:\s[A-Za-z]+)*\b'
+    rot13_candidates = re.findall(rot13_words, text)
+    kwords = {'the', 'be', 'to', 'of', 'and', 'a', 'in',
+              'that', 'have', 'this', 'is', 'are', 'was',
+              'were', 'for', 'with', 'from', 'hello', 'world',
+              'password', 'admin', 'user', 'login', 'secret',
+              'key', 'api', 'token', 'summer', 'winter', 'spring',
+              'autumn', '2024', '2023', '2025', 'true', 'false',
+              'null', 'none', 'yes', 'no', 'error', 'warning', 'info',
+              'debug', 'trace', 'log', 'file', 'data', 'text', 'string',
+              'txt', 'api', 'live', 'test', 'i', 'an', 'his', 'her',
+              'my', 'he', 'she', 'me', 'google', 'user', 'users', 'secure',
+              'megasecure'
+              }
+    res_candidates = []
 
     for candidate in rot13_candidates:
-        kwords = {'the', 'be', 'to', 'of', 'and', 'a', 'in',
-                  'that', 'have', 'this', 'is', 'are', 'was',
-                  'were', 'for', 'with', 'from', 'hello', 'world',
-                  'password', 'admin', 'user', 'login', 'secret',
-                  'key', 'api', 'token', 'summer', 'winter', 'spring',
-                  'autumn', '2024', '2023', '2025', 'true', 'false',
-                  'null', 'none', 'yes', 'no', 'error', 'warning', 'info',
-                  'debug', 'trace', 'log', 'file', 'data', 'text', 'string'
-                  }
-        if candidate.lower() in kwords:
-            continue
-        if candidate[0].isdigit() or candidate[-1].isdigit():
-            continue
-        if candidate[0].isdigit() or candidate[-1].isdigit():
-            continue
+        words_in_cand = candidate.split(' ')
+        if (len(words_in_cand) >1) and (candidate.isprintable()):
+            res_candidates.append(candidate)
+
+            for w in words_in_cand:
+                if w.lower() in kwords:
+                    res_candidates.remove(candidate)
+    decoded_words = []
+    for element in res_candidates:
         try:
-            decoded = codecs.decode(candidate, 'rot_13')
-            if decoded == candidate or not decoded.isprintable():
-                continue
-            vowels = 'aeiouyAEIOUY'
-            if not any(c in vowels for c in decoded):
-                continue
-            if decoded.lower() in kwords:
-                result['rot13'].append(decoded)
-                continue
+            decoded_word = codecs.decode(element, 'rot_13')
+            decoded_words.append(decoded_word)
         except:
             pass
+
+    for element in decoded_words:
+        result['rot13'].append(element)
 
     for key in result:
         unique = []
@@ -208,6 +214,7 @@ if __name__ == '__main__':
         main_text = f.read()
         report = generate_comprehensive_report(main_text)
         print_report(report)
+
 
 
 
