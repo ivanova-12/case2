@@ -1,6 +1,8 @@
 import re
 import codecs
 import base64
+
+
 def find_system_info(text):
     """
     find sistem information
@@ -260,6 +262,7 @@ if __name__ == '__main__':
     with (open('optimizate_results.txt', 'w+', encoding='utf-8') as fi):
         with open('result2.txt', 'r', encoding='utf-8') as f:
             our_txt = f.readlines()
+            len_our_txt = len(our_txt)
             for line in our_txt:
                 if (line == '' or any(ord('А') <= ord(alpha) <= ord('Я') for alpha in list(line))
                         or line.rstrip() == 'HEX:' or line.rstrip() == 'ROT13:' or line.rstrip() == 'BASE64:'
@@ -272,6 +275,7 @@ if __name__ == '__main__':
                 fl = 'result' + str(i) + '.txt'
                 with open(fl, 'r', encoding='utf-8') as fe:
                     txt = fe.readlines()
+                    len_txt = len(txt)
                     for line in txt:
                         if (line == '' or any( ord('А') <= ord(alpha) <= ord('Я') for alpha in list(line))
                             or line.rstrip() == 'HEX:' or line.rstrip() == 'ROT13:' or line.rstrip() == 'BASE64:'
@@ -280,24 +284,31 @@ if __name__ == '__main__':
                             txt.remove(line)
                     txt = set(txt)
                     s = ''
+                    fi.write(f'ВСЕГО НАША КОМАНДА НАШЛА {len_our_txt} АРТЕФАКТОВ' + '\n')
+                    fi.write(f'ВСЕГО {i} КОМАНДА НАШЛА {len_txt} АРТЕФАКТОВ' + '\n')
+                    fi.write('' + '\n')
                     if len(txt & our_txt) > 0:
                         fi.write(s + '\n')
+                        fi.write(f'НАША И КОМАНДА {i} НАШЛИ ОБЩИХ АРТЕФАКТОВ: {len(txt & our_txt)}' + '\n')
                         fi.write(f'НАША КОМАНДА И КОМАНДА {i} ИМЕЮТ ОДИНАКОВЫЕ ДАННЫЕ:' + '\n')
                         fi.write(s + '\n')
                         for elem in (txt & our_txt):
                             fi.write(elem)
                     if len(our_txt - txt) > 0:
                         fi.write(s + '\n')
+                        fi.write(f'КОМАНДА {i} НЕ НАШЛА: {len(our_txt - txt)} АРТЕФАКТОВ' + '\n')
                         fi.write(f'КОМАНДА {i} НЕ НАШЛА:'  + '\n')
                         fi.write(s + '\n')
                         for elem in (our_txt - txt):
                             fi.write(elem)
                     if  len(txt - our_txt) > 0:
                         fi.write(s + '\n')
+                        fi.write(f'НАША КОМАНДА НЕ НАШЛА: {len(txt & our_txt)} АРТЕФАКТОВ' + '\n')
                         fi.write(f'НАША КОМАНДА НЕ НАШЛА:'  + '\n')
                         fi.write(s + '\n')
                         for elem in (txt - our_txt):
                             fi.write(elem)
+
 
 
 
