@@ -61,30 +61,31 @@ def find_and_validate_credit_cards(text):
         match = (re.findall(cards, line))
         for card in match:
             clean_card = re.sub(r'[\s-]', '', card)
-            potential_card = [int(digit) for digit in clean_card]
-            odd_position = potential_card[::2]
-            even_position = potential_card[1::2]
-            check_list = []
-            for digit in odd_position:
-                digit = digit * 2
-                check_list.append(digit)
-            check_list_new = []
-            for digit in check_list:
-                if digit > 9:
-                    digit -= 9
-                check_list_new.append(digit)
-                sequence = even_position + check_list_new
-            count = 0
+            if clean_card != '0' * 16:
+                potential_card = [int(digit) for digit in clean_card]
+                odd_position = potential_card[::2]
+                even_position = potential_card[1::2]
+                check_list = []
+                for digit in odd_position:
+                    digit = digit * 2
+                    check_list.append(digit)
+                check_list_new = []
+                for digit in check_list:
+                    if digit > 9:
+                        digit -= 9
+                    check_list_new.append(digit)
+                    sequence = even_position + check_list_new
+                count = 0
 
-            for digit in sequence:
-                count += int(digit)
-            if count % 10 == 0:
-                valid.append(str(card))
-            else:
-                invalid.append(str(card))
-            result['valid'] = set(list(valid))
-            result['invalid'] = set(list(invalid))
-    return result
+                for digit in sequence:
+                    count += int(digit)
+                if count % 10 == 0:
+                    valid.append(str(card))
+                else:
+                    invalid.append(str(card))
+                result['valid'] = set(list(valid))
+                result['invalid'] = set(list(invalid))
+        return result
 
 
 def decode_messages(text):
@@ -163,7 +164,8 @@ def decode_messages(text):
 
             for w in words_in_cand:
                 if w.lower() in kwords:
-                    res_candidates.remove(candidate)
+                    if candidate in res_candidates:
+                        res_candidates.remove(candidate)
     decoded_words = []
     for element in res_candidates:
         try:
@@ -308,6 +310,26 @@ if __name__ == '__main__':
                         fi.write(s + '\n')
                         for elem in (txt - our_txt):
                             fi.write(elem)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
